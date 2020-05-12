@@ -2,8 +2,7 @@
 import { Component, AfterViewInit } from '@angular/core';
 import { routes } from '../app/routeJson';
 import { lineString, FeatureCollection, LineString } from '@turf/helpers';
-// import { lineOverlap  } from '@turf/line-overlap';
-import lineOverlap from '@turf/line-overlap'
+import { lineOverlap  } from '@turf/turf';
 import { LatLngLiteral } from '@agm/core';
 
 @Component({
@@ -94,7 +93,8 @@ export class AppComponent implements AfterViewInit {
       for (let j = i+1; j < this.polyLines.length; j++) {
         let line1 = lineString(this.polyLines[i]);
         let line2 = lineString(this.polyLines[j])
-        let overlapping = lineOverlap(line1, line2);
+        console.log(lineOverlap)
+        let overlapping = lineOverlap (line1, line2);
         if (overlapping) {
           this.drawIntersections(overlapping);
         }
@@ -121,7 +121,7 @@ export class AppComponent implements AfterViewInit {
     google.maps.event.addListener(polyLineObj,"mouseover", e => {
       let pos: google.maps.LatLngLiteral = {
         lat: e.latLng.lat(),
-        lng: e.latLng.lng(), 
+        lng: e.latLng.lng(),
       }
       infowindow.setPosition(pos);
       infowindow.open(this.map);
