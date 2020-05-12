@@ -1,16 +1,8 @@
 /// <reference types="@types/googlemaps" />
 import { Component, AfterViewInit } from '@angular/core';
 import { routes } from '../app/routeJson';
-import { lineOverlap, lineString } from '@turf/turf';
+import { lineOverlap, lineString, FeatureCollection, LineString } from '@turf/turf';
 import { LatLngLiteral } from '@agm/core';
-
-interface Feature {
-  coordArray: number[][];
-}
-
-interface Overlap {
-  features: Feature[];
-}
 
 @Component({
   selector: 'app-root',
@@ -18,10 +10,34 @@ interface Overlap {
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements AfterViewInit {
-  map: google.maps.Map;
-  directionsService;
-  bounds = new google.maps.LatLngBounds();
-  polyLines = [];
+  private map: google.maps.Map;
+  private directionsService: google.maps.DirectionsService;
+  private polyLines: number[][][] = [];
+  private mapOptions: google.maps.MapOptions = {
+    zoom: 16,
+    draggable: true,
+    center: {
+        lat: -25.791004,
+        lng: 28.303009
+    },
+    mapTypeControl: false
+  };
+  private lineSymbol: google.maps.Symbol = {
+    path: 'M 0,-1 0,1',
+    strokeOpacity: 1,
+    scale: 4,
+    fillColor: '#ffffff'
+  };
+  private polyLineOptions: google.maps.PolylineOptions = {
+    strokeOpacity: 0,
+    icons: [{
+      icon: this.lineSymbol,
+      offset: '0',
+      repeat: '20px'
+    }],
+    zIndex: 100,
+    clickable: true
+  }
 
   constructor() {
   }
@@ -31,15 +47,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   initialize() {
-    let mapOptions = {
-        zoom: 16,
-        draggable: true,
-        center: {
-            lat: -25.791004,
-            lng: 28.303009
-        }
-    };
-    this.map = new google.maps.Map(document.getElementById('map'), mapOptions);
+    this.map = new google.maps.Map(document.getElementById('map'), this.mapOptions);
     this.directionsService = new google.maps.DirectionsService();
     this.loadRoutes();
   }
@@ -58,19 +66,19 @@ export class AppComponent implements AfterViewInit {
           directionsDisplay.setDirections(result);
           this.polyLines.push(this.createPathArray(result.routes[0].legs));
           if (this.polyLines.length === routes.length) {
-            this.drawPolylineIntersections();
+            this.findPolylineIntersections();
           }
         }
       });
     }
   }
 
-  createPathArray(legs: any): any  {
+  createPathArray(legs: any): number[][]  {
     let arrOfarrays: number[][] = [];
     for (let i = 0; i < legs.length; i++) {
-      var steps = legs[i].steps;
+      let steps = legs[i].steps;
       for (let j = 0; j < steps.length; j++) {
-        var path = steps[j].path;
+        let path = steps[j].path;
         for(let point of path) {
           arrOfarrays.push([point.lat(), point.lng()]);
         }
@@ -79,54 +87,44 @@ export class AppComponent implements AfterViewInit {
     return arrOfarrays;
   }
 
-  drawPolylineIntersections() {
-    let lineSymbol = {
-      path: 'M 0,-1 0,1',
-      strokeOpacity: 1,
-      scale: 4
-    };
-    console.log(this.polyLines);
+  findPolylineIntersections() {
     for (let i = 0; i < this.polyLines.length; i++) {
       for (let j = i+1; j < this.polyLines.length; j++) {
-        if (i !== j) {
-          let line1 = lineString(this.polyLines[i]);
-          let line2 = lineString(this.polyLines[j]);
-          let overlapping = lineOverlap(line1, line2);
-          if (overlapping) {
-            for (let feature of overlapping.features) {
-              let formated: LatLngLiteral[] = feature.geometry.coordinates.map(e => {return {lat: e[0], lng: e[1]}});
-              let line = new google.maps.Polyline({
-                path: formated,
-                strokeOpacity: 0,
-                icons: [{
-                  icon: lineSymbol,
-                  offset: '0',
-                  repeat: '20px'
-                }],
-                map: this.map,
-                zIndex: 100,
-                strokeColor: this.getRandomColor(),
-                clickable: true
-              });
-              let infowindow = new google.maps.InfoWindow({
-                content: "infowindow text content"
-              });
-              google.maps.event.addListener(line,"mouseover", e => {
-                let pos: google.maps.LatLngLiteral = {
-                  lat: e.latLng.lat(),
-                  lng: e.latLng.lng(), 
-                }
-                infowindow.setPosition(pos);
-                infowindow.open(this.map);
-              });
-              google.maps.event.addListener(line,"mouseout", e => {
-                infowindow.close();
-              })
-            }
-          }
+        let overlapping = lineOverlap(lineString(this.polyLines[i]),  lineString(this.polyLines[j]));
+        if (overlapping) {
+          this.drawIntersections(overlapping);
         }
       }
     }
+  }
+
+  drawIntersections(overlappingPoints: FeatureCollection<LineString>) {
+    let formated: LatLngLiteral[] = [];
+    for (let feature of overlappingPoints.features) {
+      formated = feature.geometry.coordinates.map(e => {return {lat: e[0], lng: e[1]}});
+      this.polyLineOptions.path = formated;
+      this.polyLineOptions.strokeColor = this.getRandomColor();
+      let line = new google.maps.Polyline(this.polyLineOptions);
+      line.setMap(this.map);
+      this.startHoverListners(line);
+    }
+  }
+
+  startHoverListners(polyLineObj: google.maps.Polyline) {
+    let infowindow = new google.maps.InfoWindow({
+      content: "infowindow text content"
+    });
+    google.maps.event.addListener(polyLineObj,"mouseover", e => {
+      let pos: google.maps.LatLngLiteral = {
+        lat: e.latLng.lat(),
+        lng: e.latLng.lng(), 
+      }
+      infowindow.setPosition(pos);
+      infowindow.open(this.map);
+    });
+    google.maps.event.addListener(polyLineObj,"mouseout", e => {
+      infowindow.close();
+    })
   }
 
   getRandomColor() {
