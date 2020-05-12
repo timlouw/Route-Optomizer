@@ -117,11 +117,10 @@ export class AppComponent implements AfterViewInit {
       content: "This intersections is " + lineDistance(coords).toFixed(2) + "km long"
     });
     google.maps.event.addListener(polyLineObj,"mouseover", e => {
-      let pos: google.maps.LatLngLiteral = {
+      infowindow.setPosition({
         lat: e.latLng.lat(),
         lng: e.latLng.lng(),
-      }
-      infowindow.setPosition(pos);
+      });
       infowindow.open(this.map);
     });
     google.maps.event.addListener(polyLineObj,"mouseout", e => {
