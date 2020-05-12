@@ -1,8 +1,8 @@
 /// <reference types="@types/googlemaps" />
 import { Component, AfterViewInit } from '@angular/core';
 import { routes } from '../app/routeJson';
-import { lineString, FeatureCollection, LineString } from '@turf/helpers';
-import { lineOverlap  } from '@turf/turf';
+import { lineString, FeatureCollection, LineString, AllGeoJSON } from '@turf/helpers';
+import { lineOverlap, lineDistance } from '@turf/turf';
 import { LatLngLiteral } from '@agm/core';
 
 @Component({
@@ -91,11 +91,9 @@ export class AppComponent implements AfterViewInit {
   findPolylineIntersections() {
     for (let i = 0; i < this.polyLines.length; i++) {
       for (let j = i+1; j < this.polyLines.length; j++) {
-        let line1 = lineString(this.polyLines[i]);
-        let line2 = lineString(this.polyLines[j])
-        console.log(lineOverlap)
-        let overlapping = lineOverlap (line1, line2);
-        if (overlapping) {
+        let overlapping = lineOverlap(lineString(this.polyLines[i]), lineString(this.polyLines[j]));
+        if (overlapping.features.length > 0) {
+          console.log(overlapping)
           this.drawIntersections(overlapping);
         }
       }
@@ -110,13 +108,13 @@ export class AppComponent implements AfterViewInit {
       this.polyLineOptions.strokeColor = this.getRandomColor();
       let line = new google.maps.Polyline(this.polyLineOptions);
       line.setMap(this.map);
-      this.startHoverListners(line);
+      this.startHoverListners(line, feature);
     }
   }
 
-  startHoverListners(polyLineObj: google.maps.Polyline) {
+  startHoverListners(polyLineObj: google.maps.Polyline, coords: AllGeoJSON) {
     let infowindow = new google.maps.InfoWindow({
-      content: "infowindow text content"
+      content: "This intersections is " + lineDistance(coords).toFixed(2) + "km long"
     });
     google.maps.event.addListener(polyLineObj,"mouseover", e => {
       let pos: google.maps.LatLngLiteral = {
