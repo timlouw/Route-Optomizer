@@ -1,7 +1,9 @@
 /// <reference types="@types/googlemaps" />
 import { Component, AfterViewInit } from '@angular/core';
 import { routes } from '../app/routeJson';
-import { lineOverlap, lineString, FeatureCollection, LineString } from '@turf/turf';
+import { lineString, FeatureCollection, LineString } from '@turf/helpers';
+// import { lineOverlap  } from '@turf/line-overlap';
+import lineOverlap from '@turf/line-overlap'
 import { LatLngLiteral } from '@agm/core';
 
 @Component({
@@ -90,7 +92,9 @@ export class AppComponent implements AfterViewInit {
   findPolylineIntersections() {
     for (let i = 0; i < this.polyLines.length; i++) {
       for (let j = i+1; j < this.polyLines.length; j++) {
-        let overlapping = lineOverlap(lineString(this.polyLines[i]),  lineString(this.polyLines[j]));
+        let line1 = lineString(this.polyLines[i]);
+        let line2 = lineString(this.polyLines[j])
+        let overlapping = lineOverlap(line1, line2);
         if (overlapping) {
           this.drawIntersections(overlapping);
         }

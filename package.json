@@ -25,6 +25,7 @@
     "@angular/platform-browser": "~9.1.6",
     "@angular/platform-browser-dynamic": "~9.1.6",
     "@angular/router": "~9.1.6",
+    "@turf/line-overlap": "^6.0.2",
     "@turf/turf": "^5.1.6",
     "core-js": "^3.6.5",
     "firebase": "^7.14.3",
