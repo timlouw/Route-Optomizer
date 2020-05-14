@@ -93,16 +93,17 @@ export class AppComponent implements AfterViewInit {
       for (let j = i+1; j < this.polyLines.length; j++) {
         let overlapping = lineOverlap(lineString(this.polyLines[i]), lineString(this.polyLines[j]));
         if (overlapping.features.length > 0) {
-          console.log("intersect slice slice");
-          console.log(overlapping.features[0].geometry.coordinates.slice(0, 6));
-          console.log(overlapping.features[1].geometry.coordinates.slice(0, 6));
-          if (this.isOppositeDirection(
-            this.polyLines[i],
-            this.polyLines[j],
-            overlapping.features[0].geometry.coordinates[0],
-            overlapping.features[0].geometry.coordinates[1])
-          ) {
-            this.drawIntersections(overlapping);
+          for (let feature of overlapping.features) {
+            if (feature.geometry.coordinates.length > 2) {
+              if (this.isOppositeDirection(
+                this.polyLines[i],
+                this.polyLines[j],
+                feature.geometry.coordinates[1],
+                feature.geometry.coordinates[2])
+              ) {
+                this.drawIntersections(overlapping);
+              }
+            }
           }
         }
       }
@@ -114,14 +115,6 @@ export class AppComponent implements AfterViewInit {
     let line1Direction = this.determineUpOrDown(line1, index1, secondElement);
     let index2 = line2.findIndex((obj: number[]) => (this.arePointsEqual(firstElement, obj)));
     let line2Direction = this.determineUpOrDown(line2, index2, secondElement);
-    console.log("Line 1 at index");
-    console.log(line1[index1]);
-    console.log("Line 2 at index");
-    console.log(line2[index2]);
-    console.log("Line 1 slice");
-    console.log(line1.slice(index1 - 3, index1 + 3))
-    console.log("Line 2 slice");
-    console.log(line2.slice(index2 - 3, index2 + 3))
     if (line1Direction === 0 || line2Direction === 0) {
       console.log('no direction becasue: ', line1Direction, ' ', line2Direction)
       return false;
@@ -144,10 +137,6 @@ export class AppComponent implements AfterViewInit {
       num = 1;
     } else if (this.arePointsEqual(oneElementUp, secondEle)) {
       num = 2;
-    } else {
-      console.log(oneElementDown)
-      console.log(oneElementUp)
-      console.log(secondEle)
     }
     return num;
     // return 0 = no match for second element when going up or down the array of points
